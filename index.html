@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<!--
+..........................................................
+SAMPLE 10: Adding a trace by clicking the map
+..........................................................
+U.S. Geological Survey, Texas Water Science Center, Austin
+https://txpub.usgs.gov/DSS/Streamer/
+streamer@usgs.gov
+..........................................................
+-->
+<html>
+    <!-- HTML HEAD -->
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>Streamer Trace API: Sample #10</title>
+
+        <!-- ESRI JSAPI 3.14 -->
+        <link rel="stylesheet" href="https://js.arcgis.com/3.14/esri/css/esri.css">
+        <script type="text/javascript" src="https://js.arcgis.com/3.14/"></script>
+
+        <!-- Streamer Trace JSAPI 3.14 -->
+        <script type="text/javascript" src="https://txpub.usgs.gov/DSS/Streamer/api/3.14/js/trace_api.min.js"></script>
+
+        <!-- css styling -->
+        <style type="text/css">
+            html, body, #map {
+                height: 100%;
+                width: 100%;
+                margin: 0px;
+                padding: 0px;
+                overflow: hidden;
+            }
+            #HomeButton {
+                position: absolute;
+                left: 20px;
+                top: 90px;
+            }
+            #description, #controls {
+                position: absolute;
+                background: rgba(255,255,255,0.8);
+                border: 1px solid black;
+                border-radius: 5px;
+                padding: 10px;
+                font-family: Arial, Helvetica, sans-serif;
+                z-index: 99;
+            }
+            #description {
+                right: 20px;
+                top: 20px;
+            }
+            #controls {
+                left: 70px;
+                top: 20px;
+            }
+        </style>
+
+        <!-- main JavaScript -->
+        <script type="text/javascript">
+            require( ["esri/map","esri/dijit/HomeButton","dojo/domReady!"], function(Map,HomeButton) {
+                // create map
+                // since we'll add a trace_api basemap, set the map LevelsOfDetail (zoom levels) to the API basemapLODs
+                var map = new Map("map", {
+                    "center"          : [-105.2705, 40.0150],
+                    "zoom"            : 9,
+                    "lods"            : trace_api.basemapLODs,
+                    "showAttribution" : false,
+                    "logo"            : false
+                });
+
+                // add "home" navigation button (zooms to initial extent when clicked)
+                ( new HomeButton( {"map":map}, "HomeButton") ).startup();
+
+                // connect Trace API "trace-complete" event handler
+                trace_api.on( "trace-complete", function() {
+                    // give an alert if addTrace failed
+                    if ( trace_api.lastAddTraceFailure() ) {
+                        // there is a failure message - give alert
+                        alert( "trace_api.on 'trace-complete': Trace could not be added to map.\nReason:\n\n" + trace_api.lastAddTraceFailure() + "\n\n" );
+                    }
+                });
+
+                // add trace_api basemap, USA mask, and set map on-click callback when the trace_api is loaded
+                trace_api.on("load", function() {
+                    // add the Trace API "imagery" basemap
+                    let currentX = -105.2705;
+                    let currentY = 40.0150;
+
+                    trace_api.addTrace({
+                      "map": map,
+                      x: currentX,
+                      y: currentY,
+                    });
+                    
+                    trace_api.addBasemap({
+                        "map"     : map,       // map to use
+                        "basemap" : "imagery", // ESRI "World Imagery" basemap with Streamer's traceable streams & labels
+                        "opacity" : 0.9        // opacity (0-1, 1=100% opaque)
+                    });
+
+                    // add gray mask of the United States
+                    trace_api.toggleUsaMask({
+                        "map"     : map,  // map to use
+                        "visible" : true, // toggle visible
+                        "opacity" : 0.2   // opacity (0-1, 1=100% opaque)
+                    });
+
+                    // set map on-click callback
+                    map.on("click", function(evt) {
+                        // get trace direction currently selected in drop-down menu
+                        var traceDir = document.getElementById("menu_traceDir");
+                        traceDir = traceDir.options[traceDir.selectedIndex].text;
+
+                        // add trace using the trace_api.addTrace() method with desired options
+                        trace_api.addTrace({
+                            "map"            : map,            // map to use
+                            // ...parameters defining the stream trace to add...
+                            "x"              : evt.mapPoint.x, // set trace origin x-coord to the map click
+                            "y"              : evt.mapPoint.y, // set trace origin y-coord to the map click
+                            "xy_wkid"        : evt.mapPoint.spatialReference.wkid, // map-click coord spatial reference wkid
+                            "traceDir"       : traceDir,       // direction of stream trace (must be "up" or "down")
+                            // ...additional trace options...
+                            "originPoint"    : "infoHover",    // add point graphic to trace origin with mouse-hover info window
+                            "clearOldTraces" : true            // clear any existing map traces before trying to add the new one
+                        }, console.log(evt.mapPoint.x, evt.mapPoint.y));
+                    }); // end map.on "click"
+                }); // end trace_api.on "load"
+
+            }); // end require
+        </script>
+    </head>
+
+    <!-- HTML BODY -->
+    <body>
+
+        <!-- map -->
+        <div id="map"></div>
+
+        <!-- home button -->
+        <div id="HomeButton"></div>
+    </body>
+
+</html>
+<!-- END Streamer Trace API SAMPLE -->
